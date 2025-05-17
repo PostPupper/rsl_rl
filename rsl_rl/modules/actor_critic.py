@@ -25,6 +25,7 @@ class ActorCritic(nn.Module):
         activation="elu",
         init_noise_std=1.0,
         noise_std_type: str = "scalar",
+        min_std: float = 1e-3,
         **kwargs,
     ):
         if kwargs:
@@ -66,12 +67,13 @@ class ActorCritic(nn.Module):
 
         # Action noise
         self.noise_std_type = noise_std_type
-        if self.noise_std_type == "scalar":
+        if self.noise_std_type == "scalar" or self.noise_std_type == "softplus":
             self.std = nn.Parameter(init_noise_std * torch.ones(num_actions))
         elif self.noise_std_type == "log":
             self.log_std = nn.Parameter(torch.log(init_noise_std * torch.ones(num_actions)))
         else:
             raise ValueError(f"Unknown standard deviation type: {self.noise_std_type}. Should be 'scalar' or 'log'")
+        self.min_std = min_std
 
         # Action distribution (populated in update_distribution)
         self.distribution = None
@@ -112,6 +114,8 @@ class ActorCritic(nn.Module):
             std = self.std.expand_as(mean)
         elif self.noise_std_type == "log":
             std = torch.exp(self.log_std).expand_as(mean)
+        elif self.noise_std_type == "softplus":
+            std = torch.nn.functional.softplus(self.std).expand_as(mean) + self.min_std
         else:
             raise ValueError(f"Unknown standard deviation type: {self.noise_std_type}. Should be 'scalar' or 'log'")
         # create distribution
