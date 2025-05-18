@@ -123,6 +123,10 @@ class ActorCritic(nn.Module):
             std = torch.exp(self.log_std).expand_as(mean)
         elif self.noise_std_type == "softplus":
             std = torch.nn.functional.softplus(self.std).expand_as(mean) + self.min_std
+            # if there are any negative or nan values, call breakpoint()
+            if torch.any(std < 0) or torch.any(torch.isnan(std)):
+                print("std is negative or nan")
+                breakpoint()
         else:
             raise ValueError(f"Unknown standard deviation type: {self.noise_std_type}. Should be 'scalar' or 'log'")
         # create distribution
