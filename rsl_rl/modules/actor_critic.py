@@ -12,6 +12,11 @@ from torch.distributions import Normal
 from rsl_rl.utils import resolve_nn_activation
 
 
+def inverse_softplus(x):
+    """Inverse of the softplus function."""
+    return torch.log(torch.expm1(x))
+
+
 class ActorCritic(nn.Module):
     is_recurrent = False
 
@@ -67,8 +72,10 @@ class ActorCritic(nn.Module):
 
         # Action noise
         self.noise_std_type = noise_std_type
-        if self.noise_std_type == "scalar" or self.noise_std_type == "softplus":
+        if self.noise_std_type == "scalar":
             self.std = nn.Parameter(init_noise_std * torch.ones(num_actions))
+        elif self.noise_std_type == "softplus":
+            self.std = nn.Parameter(inverse_softplus(init_noise_std * torch.ones(num_actions)))
         elif self.noise_std_type == "log":
             self.log_std = nn.Parameter(torch.log(init_noise_std * torch.ones(num_actions)))
         else:
