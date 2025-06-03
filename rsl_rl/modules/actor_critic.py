@@ -114,6 +114,9 @@ class ActorCritic(nn.Module):
         return self.distribution.entropy().sum(dim=-1)
 
     def update_distribution(self, observations):
+        if observations.isnan().any():
+            print("Observations contain NaN values")
+            breakpoint()
         # compute mean
         mean = self.actor(observations)
         # compute standard deviation
